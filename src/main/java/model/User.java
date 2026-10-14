@@ -7,8 +7,9 @@ public class User {
     private String email;
     private String phonenumber;
     private String password;
+    private String role;
 
-    public user(){
+    public User(){
 
     }
     
@@ -58,6 +59,18 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.password = passwordHash;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     
