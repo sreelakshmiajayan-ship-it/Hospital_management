@@ -2,6 +2,7 @@ package model;
 
 public class Patient extends Person {
 
+    private String opNumber;
     private String disease;
     private String bloodGroup;
     private String address;
@@ -12,13 +13,23 @@ public class Patient extends Person {
 
     public Patient(int id, String firstname, String lastname,
                    int age, String phonenumber, String email,
-                   String disease, String bloodGroup, String address) {
+                   String opNumber, String disease,
+                   String bloodGroup, String address) {
 
         super(id, firstname, lastname, age, phonenumber, email);
 
+        this.opNumber = opNumber;
         this.disease = disease;
         this.bloodGroup = bloodGroup;
         this.address = address;
+    }
+
+    public String getOpNumber() {
+        return opNumber;
+    }
+
+    public void setOpNumber(String opNumber) {
+        this.opNumber = opNumber;
     }
 
     public String getDisease() {
@@ -45,12 +56,12 @@ public class Patient extends Person {
         this.address = address;
     }
 
-
     public void displayRole() {
         System.out.println("Role: Patient");
     }
 
     public void displayDetails() {
+        System.out.println("OP Number: " + opNumber);
         System.out.println("Patient ID: " + getId());
         System.out.println("Name: " + getFirstname() + " " + getLastname());
         System.out.println("Age: " + getAge());
