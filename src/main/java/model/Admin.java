@@ -16,7 +16,7 @@ public class Admin extends User {
         setLastname(lastname);
         setEmail(email);
         setPhonenumber(phonenumber);
-        setPasswordHash(passwordHash);
+        setPassword(passwordHash);
         setRole("ADMIN");
     }
 
