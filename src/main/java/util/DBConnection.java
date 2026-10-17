@@ -11,7 +11,7 @@ public class DBConnection {
             "jdbc:mysql://localhost:3306/hospital_management";
 
     private static final String USER = "root";
-    private static final String PASSWORD = "Sree@2008";
+    private static final String PASSWORD = System.getenv("DB_PASSWORD");
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
