@@ -11,9 +11,23 @@ public class DBConnection {
             "jdbc:mysql://localhost:3306/hospital_management";
 
     private static final String USER = "root";
-    private static final String PASSWORD = System.getenv("DB_PASSWORD");
+    private static final String PASSWORD =
+            System.getenv("DB_PASSWORD");
 
-    public static Connection getConnection() throws SQLException {
+    private static DBConnection instance;
+
+    private DBConnection() {
+    }
+
+    public static synchronized DBConnection getInstance() {
+        if (instance == null) {
+            instance = new DBConnection();
+        }
+        return instance;
+    }
+
+    public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 }
+
