@@ -1,6 +1,8 @@
 
 package service;
 
+import exception.AppointmentConflictException;
+import exception.RoomUnavailableException;
 import dao.AppointmentDAO;
 import model.Appointment;
 
@@ -13,7 +15,7 @@ public class AppointmentService {
 
     // Book Appointment
     public boolean bookAppointment(Appointment appointment)
-            throws SQLException {
+            throws SQLException, AppointmentConflictException, RoomUnavailableException {
 
         if (appointment == null) {
             throw new IllegalArgumentException(
@@ -25,7 +27,33 @@ public class AppointmentService {
             throw new IllegalArgumentException(
                     "Patient and doctor are required.");
         }
+        List<Appointment> existingAppointments = appointmentDAO.getAllAppointments();
+        
+        for (Appointment existing : existingAppointments) {
+            if ("Scheduled".equalsIgnoreCase(existing.getStatus())) {
+                boolean sameDateTime = existing.getAppointmentDate().equals(appointment.getAppointmentDate()) && 
+                                       existing.getAppointmentTime().equals(appointment.getAppointmentTime());
 
+                if (sameDateTime) {
+                    boolean doctorBusy = existing.getDoctor().getId() == appointment.getDoctor().getId();
+                    boolean patientBusy = existing.getPatient().getId() == appointment.getPatient().getId();
+
+                    if (doctorBusy || patientBusy) {
+                        throw new AppointmentConflictException(
+                            "Appointment Conflict: The selected doctor or patient already has an appointment at this date and time."
+                        );
+                    }
+                    if (appointment.getRoom() != null && existing.getRoom() != null) {
+                        if (existing.getRoom().getRoomNumber().equalsIgnoreCase(appointment.getRoom().getRoomNumber())) {
+                            throw new RoomUnavailableException(
+                                "Room Unavailable: Room " + appointment.getRoom().getRoomNumber() + " is already booked for this time slot."
+                            );
+                        }
+                    }
+                }
+            }
+        }
+       
         appointment.setStatus("Scheduled");
 
         return appointmentDAO.addAppointment(appointment);
