@@ -1,40 +1,40 @@
+
 package service;
 
+import dao.DoctorDAO;
 import model.Doctor;
-import java.util.ArrayList;
+
+import java.sql.SQLException;
 import java.util.List;
 
 public class AdminService {
 
-    // In-memory list (can be backed by your teammate's DAO later)
-    private List<Doctor> doctorList = new ArrayList<>();
+    private final DoctorDAO doctorDAO = new DoctorDAO();
 
-    /**
-     * Adds a new doctor to the system.
-     */
-    public void addDoctor(Doctor doctor) {
+    // Add Doctor
+    public boolean addDoctor(Doctor doctor) throws SQLException {
         if (doctor == null) {
-            throw new IllegalArgumentException("Doctor details cannot be null.");
+            throw new IllegalArgumentException(
+                    "Doctor details cannot be null.");
         }
-        doctorList.add(doctor);
+
+        return doctorDAO.addDoctor(doctor);
     }
 
-    /**
-     * Removes a doctor from the system by their ID.
-     */
-    public void removeDoctor(String doctorId) {
-        // Using String.valueOf() to handle potential primitive int IDs safely
-        boolean removed = doctorList.removeIf(doctor -> String.valueOf(doctor.getId()).equals(doctorId));
-        
-        if (!removed) {
-            throw new IllegalArgumentException("Doctor with ID " + doctorId + " not found.");
+    // Remove Doctor by ID
+    public boolean removeDoctor(int doctorId) throws SQLException {
+        Doctor doctor = doctorDAO.getDoctorById(doctorId);
+
+        if (doctor == null) {
+            throw new IllegalArgumentException(
+                    "Doctor with ID " + doctorId + " not found.");
         }
+
+        return doctorDAO.deleteDoctor(doctorId);
     }
 
-    /**
-     * Retrieves all doctors in the system.
-     */
-    public List<Doctor> getAllDoctors() {
-        return doctorList;
+    // Get All Doctors
+    public List<Doctor> getAllDoctors() throws SQLException {
+        return doctorDAO.getAllDoctors();
     }
 }

@@ -1,43 +1,45 @@
+
 package service;
 
+import dao.PatientDAO;
 import model.Patient;
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.List;
 
 public class PatientService {
 
-    // In-memory storage (can be backed by your teammate's DAO later)
-    private List<Patient> patientList = new ArrayList<>();
+    private final PatientDAO patientDAO = new PatientDAO();
 
     /**
-     * Registers a new patient after validation.
+     * Registers a new patient.
      */
-    public void registerPatient(Patient patient) {
+    public boolean registerPatient(Patient patient) throws SQLException {
         if (patient == null) {
-            throw new IllegalArgumentException("Patient details cannot be null.");
+            throw new IllegalArgumentException(
+                "Patient details cannot be null."
+            );
         }
-        
-        // Optional: check for duplicate ID if needed
-        patientList.add(patient);
+
+        return patientDAO.addPatient(patient);
     }
 
     /**
-     * Finds and returns a patient by their unique ID.
+     * Finds a patient by ID.
      */
-    public Patient findPatientById(String patientId) {
-        for (Patient patient : patientList) {
-            // Adjust getPatientId() or getId() depending on your Person/Patient model definition
-            if (String.valueOf(patient.getId()).equals(patientId)) {
-                return patient;
-            }
+    public Patient findPatientById(int patientId) throws SQLException {
+        if (patientId <= 0) {
+            throw new IllegalArgumentException(
+                "Invalid patient ID."
+            );
         }
-        return null; // Return null if patient not found
+
+        return patientDAO.getPatientById(patientId);
     }
 
     /**
      * Retrieves all registered patients.
      */
-    public List<Patient> getAllPatients() {
-        return patientList;
+    public List<Patient> getAllPatients() throws SQLException {
+        return patientDAO.getAllPatients();
     }
 }

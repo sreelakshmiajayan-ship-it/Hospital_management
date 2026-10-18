@@ -1,49 +1,68 @@
+
 package service;
 
+import dao.BillDAO;
 import model.Bill;
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.List;
 
 public class BillingService {
 
-    // In-memory list for demo/testing (will be replaced by DAO)
-    private List<Bill> billList = new ArrayList<>();
+    private final BillDAO billDAO = new BillDAO();
 
     /**
-     * Generates a new bill for a patient.
+     * Generates and saves a bill.
      */
-    public void generateBill(Bill bill) {
+    public boolean generateBill(Bill bill) throws SQLException {
         if (bill == null) {
-            throw new IllegalArgumentException("Bill details cannot be null.");
+            throw new IllegalArgumentException(
+                "Bill details cannot be null."
+            );
         }
-        bill.setPaymentStatus("Unpaid");
-        billList.add(bill);
+
+        bill.setPaymentStatus("Pending");
+        return billDAO.addBill(bill);
     }
 
     /**
-     * Process payment for a bill by its bill ID.
+     * Processes payment for a bill.
      */
-    public void payBill(String billId) {
-        boolean found = false;
+   
+    public boolean payBill(int billId, String paymentMethod)
+        throws SQLException {
 
-        for (Bill bill : billList) {
-            // String.valueOf() handles potential primitive int IDs safely
-            if (String.valueOf(bill.getBillId()).equals(billId)) {
-                bill.setPaymentStatus("Paid");
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            throw new IllegalArgumentException("Bill with ID " + billId + " not found.");
-        }
+    if (billId <= 0) {
+        throw new IllegalArgumentException("Invalid bill ID.");
     }
 
+    if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+        throw new IllegalArgumentException(
+            "Payment method cannot be empty."
+        );
+    }
+
+    Bill bill = billDAO.getBillById(billId);
+
+    if (bill == null) {
+        throw new IllegalArgumentException(
+            "Bill with ID " + billId + " not found."
+        );
+    }
+
+    if ("Paid".equalsIgnoreCase(bill.getPaymentStatus())) {
+        throw new IllegalArgumentException(
+            "This bill has already been paid."
+        );
+    }
+
+    return billDAO.markBillAsPaid(billId, paymentMethod);
+}
+
+
     /**
-     * Retrieves all bill records.
+     * Retrieves all bills from the database.
      */
-    public List<Bill> getAllBills() {
-        return billList;
+    public List<Bill> getAllBills() throws SQLException {
+        return billDAO.getAllBills();
     }
 }

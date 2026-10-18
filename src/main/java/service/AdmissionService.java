@@ -1,49 +1,70 @@
+
 package service;
 
+import dao.AdmissionDAO;
 import model.Admission;
-import java.util.ArrayList;
+
+import java.sql.SQLException;
 import java.util.List;
 
 public class AdmissionService {
 
-    // In-memory list (will be replaced or backed by the DAO later)
-    private List<Admission> admissionList = new ArrayList<>();
+    private final AdmissionDAO admissionDAO = new AdmissionDAO();
 
-    /**
-     * Admits a patient to a room.
-     */
-    public void admitPatient(Admission admission) {
+    // Admit Patient
+    public boolean admitPatient(Admission admission)
+            throws SQLException {
+
         if (admission == null) {
-            throw new IllegalArgumentException("Admission details cannot be null.");
+            throw new IllegalArgumentException(
+                    "Admission details cannot be null.");
         }
-        admission.setStatus("Admitted");
-        admissionList.add(admission);
+
+        if (admission.getPatient() == null
+                || admission.getDoctor() == null) {
+            throw new IllegalArgumentException(
+                    "Patient and doctor details are required.");
+        }
+
+        admission.setStatus("Active");
+
+        return admissionDAO.addAdmission(admission);
     }
 
-    /**
-     * Discharges a patient by their admission or patient ID.
-     */
-    public void dischargePatient(String admissionId) {
-        boolean found = false;
+    // Discharge Patient
+    public boolean dischargePatient(String admissionId)
+            throws SQLException {
 
-        for (Admission admission : admissionList) {
-            // Using String.valueOf() just in case the ID is stored as a primitive int in the model
-            if (String.valueOf(admission.getAdmissionId()).equals(admissionId)) {
-                admission.setStatus("Discharged");
-                found = true;
-                break;
-            }
+        if (admissionId == null || admissionId.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Admission ID cannot be empty.");
         }
 
-        if (!found) {
-            throw new IllegalArgumentException("Admission record with ID " + admissionId + " not found.");
+        boolean discharged =
+                admissionDAO.dischargeAdmission(admissionId);
+
+        if (!discharged) {
+            throw new IllegalArgumentException(
+                    "Admission not found or patient is already discharged.");
         }
+
+        return true;
     }
 
-    /**
-     * Retrieves all active and past admission records.
-     */
-    public List<Admission> getAllAdmissions() {
-        return admissionList;
+    // Get All Admissions
+    public List<Admission> getAllAdmissions() throws SQLException {
+        return admissionDAO.getAllAdmissions();
+    }
+
+    // Get Admission by ID
+    public Admission getAdmissionById(String admissionId)
+            throws SQLException {
+
+        if (admissionId == null || admissionId.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Admission ID cannot be empty.");
+        }
+
+        return admissionDAO.getAdmissionById(admissionId);
     }
 }

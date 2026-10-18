@@ -1,50 +1,69 @@
+
 package service;
 
+import dao.AppointmentDAO;
 import model.Appointment;
-import java.util.ArrayList;
+
+import java.sql.SQLException;
 import java.util.List;
 
 public class AppointmentService {
 
-    // This can later be replaced or backed by your teammate's DAO class
-    private List<Appointment> appointmentList = new ArrayList<>();
+    private final AppointmentDAO appointmentDAO = new AppointmentDAO();
 
-    /**
-     * Books a new appointment after validating details.
-     */
-    public void bookAppointment(Appointment appointment) {
+    // Book Appointment
+    public boolean bookAppointment(Appointment appointment)
+            throws SQLException {
+
         if (appointment == null) {
-            throw new IllegalArgumentException("Appointment details cannot be null.");
+            throw new IllegalArgumentException(
+                    "Appointment details cannot be null.");
         }
-        
-        // Set default status upon booking
+
+        if (appointment.getPatient() == null
+                || appointment.getDoctor() == null) {
+            throw new IllegalArgumentException(
+                    "Patient and doctor are required.");
+        }
+
         appointment.setStatus("Scheduled");
-        appointmentList.add(appointment);
+
+        return appointmentDAO.addAppointment(appointment);
     }
 
-    /**
-     * Retrieves all appointments in the system.
-     */
-    public List<Appointment> getAllAppointments() {
-        return appointmentList;
+    // Get All Appointments
+    public List<Appointment> getAllAppointments()
+            throws SQLException {
+        return appointmentDAO.getAllAppointments();
     }
 
-    /**
-     * Cancels an existing appointment by its ID.
-     */
-    public void cancelAppointment(String appointmentId) {
-        boolean found = false;
-        
-        for (Appointment appointment : appointmentList) {
-            if (String.valueOf(appointment.getAppointmentId()).equals(appointmentId)) {
-                appointment.setStatus("Cancelled");
-                found = true;
-                break;
-            }
+    // Get Appointment by ID
+    public Appointment getAppointmentById(int appointmentId)
+            throws SQLException {
+
+        Appointment appointment =
+                appointmentDAO.getAppointmentById(appointmentId);
+
+        if (appointment == null) {
+            throw new IllegalArgumentException(
+                    "Appointment with ID " + appointmentId + " not found.");
         }
-        
-        if (!found) {
-            throw new IllegalArgumentException("Appointment with ID " + appointmentId + " not found.");
+
+        return appointment;
+    }
+
+    // Cancel Appointment
+    public boolean cancelAppointment(int appointmentId)
+            throws SQLException {
+
+        boolean cancelled =
+                appointmentDAO.cancelAppointment(appointmentId);
+
+        if (!cancelled) {
+            throw new IllegalArgumentException(
+                    "Appointment not found or already cancelled.");
         }
+
+        return true;
     }
 }
