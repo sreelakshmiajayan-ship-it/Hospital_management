@@ -16,6 +16,7 @@ public class Bill {
     private String paymentStatus;
     private String paymentMethod;
 
+
     public Bill() {
         this.billDate = LocalDate.now();
         this.paymentStatus = "Pending";
