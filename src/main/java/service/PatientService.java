@@ -5,6 +5,7 @@ import dao.PatientDAO;
 import model.Patient;
 import java.sql.SQLException;
 import java.util.List;
+import java.security.GeneralSecurityException;
 
 public class PatientService {
 
@@ -40,6 +41,37 @@ public class PatientService {
      * Retrieves all registered patients.
      */
     public List<Patient> getAllPatients() throws SQLException {
+      
         return patientDAO.getAllPatients();
     }
+
+    public boolean registerPatientWithAccount(
+        Patient patient, String password)
+        throws SQLException, GeneralSecurityException {
+
+    if (patient == null) {
+        throw new IllegalArgumentException(
+                "Patient details cannot be null.");
+    }
+
+    if (password == null || password.length() < 8) {
+        throw new IllegalArgumentException(
+                "Password must contain at least 8 characters.");
+    }
+
+    if (patient.getFirstname() == null
+            || patient.getFirstname().isBlank()
+            || patient.getLastname() == null
+            || patient.getLastname().isBlank()
+            || patient.getEmail() == null
+            || patient.getEmail().isBlank()
+            || patient.getPhonenumber() == null
+            || patient.getPhonenumber().isBlank()
+            || patient.getAge() <= 0) {
+        throw new IllegalArgumentException(
+                "Please enter valid patient details.");
+    }
+
+    return patientDAO.registerPatient(patient, password);
+}
 }

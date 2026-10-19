@@ -71,6 +71,54 @@ public class UserDAO {
         return null;
     }
 
+    // Get Admin by Admin ID
+    public User getAdminById(int adminId) throws SQLException {
+        String sql = """
+            SELECT u.*
+            FROM users u
+            INNER JOIN admins a ON u.id = a.id
+            WHERE a.id = ? AND LOWER(u.role) = 'admin'
+            """;
+
+        try (Connection con = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, adminId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapUser(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // Get login details by email
+    public String[] getLoginDetailsByEmail(String email)
+            throws SQLException {
+
+        String sql = "SELECT password, role FROM users WHERE email = ?";
+
+        try (Connection con = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new String[] {
+                        rs.getString("password"),
+                        rs.getString("role")
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
     // Get All Users
     public List<User> getAllUsers() throws SQLException {
         List<User> users = new ArrayList<>();
