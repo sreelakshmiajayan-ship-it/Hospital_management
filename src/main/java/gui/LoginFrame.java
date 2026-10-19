@@ -412,11 +412,13 @@ private void login() {
 
             if (authenticated) {
                 JOptionPane.showMessageDialog(
-                        this,
-                        "Patient login successful!\nWelcome, "
-                                + patientName + "!"
+            this,
+            "Login successful!"
                 );
-                // Open Patient Dashboard here later.
+
+            new PatientDashboard().setVisible(true);
+            dispose();
+
             } else {
                 JOptionPane.showMessageDialog(
                         this,

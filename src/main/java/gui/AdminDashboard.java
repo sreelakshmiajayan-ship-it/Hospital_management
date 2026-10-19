@@ -106,7 +106,7 @@ public class AdminDashboard extends JFrame {
         welcomePanel.add(description);
         content.add(welcomePanel, BorderLayout.NORTH);
 
-        JPanel navigation = new JPanel(new GridLayout(2, 4, 16, 16));
+        JPanel navigation = new JPanel(new GridLayout(3, 3, 16, 16));
         navigation.setOpaque(false);
         navigation.add(createNavigationButton(
                 "View Doctors", "Browse registered doctor records",
@@ -132,6 +132,9 @@ public class AdminDashboard extends JFrame {
         navigation.add(createNavigationButton(
                 "Manage Bills", "Review bills and record payments",
                 this::showBills));
+        navigation.add(createNavigationButton(
+                "Generate Bill", "Create a new patient bill",
+                this::openBilling));
 
         content.add(navigation, BorderLayout.CENTER);
         return content;
@@ -636,6 +639,10 @@ public class AdminDashboard extends JFrame {
         JOptionPane.showMessageDialog(
                 this, message, "Operation Failed",
                 JOptionPane.WARNING_MESSAGE);
+    }
+
+    private void openBilling() {
+        new BillingForm().setVisible(true);
     }
 
     private void logout() {
