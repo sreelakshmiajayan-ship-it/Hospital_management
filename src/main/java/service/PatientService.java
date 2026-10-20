@@ -37,6 +37,15 @@ public class PatientService {
         return patientDAO.getPatientById(patientId);
     }
 
+    public Patient findPatientByEmail(String email) throws SQLException {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Patient email cannot be empty.");
+        }
+
+        return patientDAO.getPatientByEmail(email.trim());
+    }
+
     /**
      * Retrieves all registered patients.
      */

@@ -1,164 +1,231 @@
+
 package gui;
+
+import model.Admission;
+import model.Doctor;
+import model.Patient;
+import model.Room;
+import service.AdmissionService;
+import service.DoctorService;
+import service.PatientService;
+import dao.RoomDAO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import model.Admission;
-import model.Patient;
-import model.Doctor;
-import service.AdmissionService;
-import service.PatientService;
+import java.sql.SQLException;
+import java.util.List;
 
-public class AdmissionForm extends JFrame {
-    private JTextField admissionIdField;
-    private JTextField patientIdField;
-    private JTextField doctorIdField;
-    private JTextField doctorNameField;
-    private JTextField roomNumberField;
-    private JButton submitButton;
-    private JButton backButton;
+public class AdmissionForm extends JDialog {
 
-    // Services
-    private AdmissionService admissionService = new AdmissionService();
-    private PatientService patientService = new PatientService();
+    private final AdmissionService admissionService =
+            new AdmissionService();
+    private final PatientService patientService =
+            new PatientService();
+    private final DoctorService doctorService =
+            new DoctorService();
+    private final RoomDAO roomDAO = new RoomDAO();
 
-    public AdmissionForm() {
-        setTitle("Hospital Management System - Admission Form");
-        setSize(850, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+    private final JTextField admissionIdField = new JTextField(18);
+    private final JComboBox<Patient> patientCombo = new JComboBox<>();
+    private final JComboBox<Doctor> doctorCombo = new JComboBox<>();
+    private final JComboBox<Room> roomCombo = new JComboBox<>();
 
-        // Header Panel (Matching AdminDashboard style)
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(new Color(25, 55, 85));
-        header.setBorder(new EmptyBorder(20, 25, 20, 25));
+    public AdmissionForm(JFrame parent) {
+        super(parent, "Admit Patient", true);
 
-        JLabel title = new JLabel("Hospital Management System");
-        title.setFont(new Font("Arial", Font.BOLD, 24));
-        title.setForeground(Color.WHITE);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setSize(520, 380);
+        setLocationRelativeTo(parent);
 
-        JLabel subtitle = new JLabel("Patient Admission Management");
-        subtitle.setFont(new Font("Arial", Font.PLAIN, 14));
-        subtitle.setForeground(Color.WHITE);
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 14));
+        form.setBorder(new EmptyBorder(25, 25, 15, 25));
 
-        JPanel headingPanel = new JPanel(new GridLayout(2, 1, 0, 5));
-        headingPanel.setOpaque(false);
-        headingPanel.add(title);
-        headingPanel.add(subtitle);
-        header.add(headingPanel, BorderLayout.WEST);
+        form.add(new JLabel("Admission ID:"));
+        form.add(admissionIdField);
 
-        backButton = new JButton("Close");
-        backButton.setFocusPainted(false);
-        header.add(backButton, BorderLayout.EAST);
+        form.add(new JLabel("Select Patient:"));
+        form.add(patientCombo);
 
-        add(header, BorderLayout.NORTH);
+        form.add(new JLabel("Select Doctor:"));
+        form.add(doctorCombo);
 
-        // Main Content Panel
-        JPanel content = new JPanel(new BorderLayout(15, 15));
-        content.setBackground(new Color(245, 247, 250));
-        content.setBorder(new EmptyBorder(30, 40, 30, 40));
+        form.add(new JLabel("Available Room:"));
+        form.add(roomCombo);
 
-        JLabel formTitle = new JLabel("Enter Admission Details");
-        formTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        formTitle.setForeground(new Color(25, 55, 85));
-        content.add(formTitle, BorderLayout.NORTH);
+        patientCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean selected, boolean focused) {
+                super.getListCellRendererComponent(
+                        list, value, index, selected, focused);
 
-        // Form Fields Grid (5 rows)
-        JPanel formPanel = new JPanel(new GridLayout(5, 2, 15, 15));
-        formPanel.setOpaque(false);
-        formPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
-
-        formPanel.add(new JLabel("Admission ID:"));
-        admissionIdField = new JTextField();
-        formPanel.add(admissionIdField);
-
-        formPanel.add(new JLabel("Patient ID:"));
-        patientIdField = new JTextField();
-        formPanel.add(patientIdField);
-
-        formPanel.add(new JLabel("Doctor ID:"));
-        doctorIdField = new JTextField();
-        formPanel.add(doctorIdField);
-
-        formPanel.add(new JLabel("Doctor Name:"));
-        doctorNameField = new JTextField();
-        formPanel.add(doctorNameField);
-
-        formPanel.add(new JLabel("Room / Ward Number:"));
-        roomNumberField = new JTextField();
-        formPanel.add(roomNumberField);
-
-        content.add(formPanel, BorderLayout.CENTER);
-
-        // Submit Button Panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
-        submitButton = new JButton("Admit Patient");
-        submitButton.setFont(new Font("Arial", Font.BOLD, 14));
-        submitButton.setBackground(new Color(25, 55, 85));
-        submitButton.setForeground(Color.WHITE);
-        submitButton.setFocusPainted(false);
-        buttonPanel.add(submitButton);
-
-        content.add(buttonPanel, BorderLayout.SOUTH);
-        add(content, BorderLayout.CENTER);
-
-        // Actions
-        backButton.addActionListener(e -> dispose());
-
-        submitButton.addActionListener(e -> {
-            try {
-                String admissionId = admissionIdField.getText().trim();
-                String patientId = patientIdField.getText().trim();
-                String doctorId = doctorIdField.getText().trim();
-                String doctorName = doctorNameField.getText().trim();
-                String roomNumber = roomNumberField.getText().trim();
-
-                if (admissionId.isEmpty() || patientId.isEmpty() || doctorId.isEmpty() || roomNumber.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                    return;
+                if (value instanceof Patient) {
+                    Patient p = (Patient) value;
+                    setText(p.getId() + " - "
+                            + p.getFirstname() + " "
+                            + p.getLastname());
                 }
-
-                // Fetch Patient safely using findPatientById with integer parsing
-                Patient patient = null;
-                try {
-                    int patientIdInt = Integer.parseInt(patientId);
-                    patient = patientService.findPatientById(patientIdInt);
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(this, "Patient ID must be a valid number.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-if (patient == null) {
-    JOptionPane.showMessageDialog(this, "Patient not found with ID: " + patientId, "Error", JOptionPane.ERROR_MESSAGE);
-    return;
-}
-
-                // Create Doctor object (adjust constructor/setters if your Doctor model differs)
-                Doctor doctor = new Doctor();
-                // doctor.setDoctorId(doctorId);
-                // doctor.setName(doctorName);
-
-                // Create Admission object matching your backend model constructor
-                Admission admission = new Admission(admissionId, patient, doctor, roomNumber);
-                
-                // Call service to save
-                boolean success = admissionService.admitPatient(admission);
-
-                if (success) {
-                    JOptionPane.showMessageDialog(this, "Patient admitted successfully!");
-                    dispose();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Admission failed to save.", "Database Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                return this;
             }
         });
+
+        doctorCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean selected, boolean focused) {
+                super.getListCellRendererComponent(
+                        list, value, index, selected, focused);
+
+                if (value instanceof Doctor) {
+                    Doctor d = (Doctor) value;
+                    setText(d.getId() + " - "
+                            + d.getFirstname() + " "
+                            + d.getLastname() + " ("
+                            + d.getSpecialization() + ")");
+                }
+                return this;
+            }
+        });
+
+        roomCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean selected, boolean focused) {
+                super.getListCellRendererComponent(
+                        list, value, index, selected, focused);
+
+                if (value instanceof Room) {
+                    Room r = (Room) value;
+                    setText(r.getRoomNumber() + " - "
+                            + r.getRoomType() + " - Rs. "
+                            + r.getDailyCharge() + "/day");
+                }
+                return this;
+            }
+        });
+
+        JPanel buttons = new JPanel(
+                new FlowLayout(FlowLayout.RIGHT));
+
+        JButton admitButton = new JButton("Admit Patient");
+        JButton cancelButton = new JButton("Cancel");
+
+        admitButton.addActionListener(e -> admitPatient());
+        cancelButton.addActionListener(e -> dispose());
+
+        buttons.add(admitButton);
+        buttons.add(cancelButton);
+
+        add(form, BorderLayout.CENTER);
+        add(buttons, BorderLayout.SOUTH);
+
+        loadFormData();
+    }
+
+    private void loadFormData() {
+        try {
+            patientCombo.removeAllItems();
+            doctorCombo.removeAllItems();
+            roomCombo.removeAllItems();
+
+            List<Patient> patients =
+                    patientService.getAllPatients();
+
+            List<Doctor> doctors =
+                    doctorService.getAllDoctors();
+
+            List<Room> rooms = roomDAO.getAvailableRooms();
+
+            for (Patient p : patients) {
+                patientCombo.addItem(p);
+            }
+
+            for (Doctor d : doctors) {
+                doctorCombo.addItem(d);
+            }
+
+            for (Room r : rooms) {
+                roomCombo.addItem(r);
+            }
+
+            if (patients.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this, "Register a patient before admission.");
+            }
+
+            if (doctors.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this, "Register a doctor before admission.");
+            }
+
+            if (rooms.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this, "No available rooms found. Add or release a room.");
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Could not load admission details:\n"
+                            + ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void admitPatient() {
+        String admissionId = admissionIdField.getText().trim();
+
+        Patient patient =
+                (Patient) patientCombo.getSelectedItem();
+
+        Doctor doctor =
+                (Doctor) doctorCombo.getSelectedItem();
+
+        Room room = (Room) roomCombo.getSelectedItem();
+
+        if (admissionId.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this, "Enter an Admission ID.");
+            return;
+        }
+
+        if (patient == null || doctor == null || room == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Select a patient, doctor, and available room.");
+            return;
+        }
+
+        Admission admission = new Admission(
+                admissionId, patient, doctor, room.getRoomNumber());
+
+        try {
+            boolean success =
+                    admissionService.admitPatient(admission);
+
+            if (success) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Patient admitted successfully!\n"
+                                + "Admission ID: " + admissionId
+                                + "\nRoom: " + room.getRoomNumber(),
+                        "Admission Successful",
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                dispose();
+            }
+
+        } catch (SQLException | IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Admission Failed",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

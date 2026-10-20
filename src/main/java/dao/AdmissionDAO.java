@@ -37,6 +37,7 @@ public class AdmissionDAO {
             return ps.executeUpdate() > 0;
         }
     }
+    
 
     // Get Admission by ID
     public Admission getAdmissionById(String admissionId)
@@ -151,4 +152,50 @@ public class AdmissionDAO {
 
         return admission;
     }
+
+    // Get admissions for a specific doctor
+public List<Admission> getAdmissionsByDoctorId(int doctorId)
+        throws SQLException {
+
+    List<Admission> admissions = new ArrayList<>();
+
+    String sql = "SELECT * FROM admissions WHERE doctor_id = ?";
+
+    try (Connection con = DBConnection.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setInt(1, doctorId);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                admissions.add(mapAdmission(rs));
+            }
+        }
+    }
+
+    return admissions;
+}
+
+// Get admissions for a specific patient
+public List<Admission> getAdmissionsByPatientId(int patientId)
+        throws SQLException {
+
+    List<Admission> admissions = new ArrayList<>();
+
+    String sql = "SELECT * FROM admissions WHERE patient_id = ?";
+
+    try (Connection con = DBConnection.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setInt(1, patientId);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                admissions.add(mapAdmission(rs));
+            }
+        }
+    }
+
+    return admissions;
+}
 }

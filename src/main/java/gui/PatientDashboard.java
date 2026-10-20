@@ -4,10 +4,33 @@ package gui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import model.Patient;
+
+import model.Admission;
+import service.AdmissionService;
+import java.sql.SQLException;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+
+import model.Bill;
+import service.BillingService;
+
+import model.Doctor;
+import service.DoctorService;
+
+
+
 
 public class PatientDashboard extends JFrame {
 
+    private final Patient authenticatedPatient;
+
     public PatientDashboard() {
+        this(null);
+    }
+
+    public PatientDashboard(Patient patient) {
+        authenticatedPatient = patient;
         setTitle("Hospital Management System - Patient Dashboard");
         setSize(1000, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -38,6 +61,8 @@ public class PatientDashboard extends JFrame {
         logoutButton.setFocusPainted(false);
         header.add(logoutButton, BorderLayout.EAST);
 
+       
+
         add(header, BorderLayout.NORTH);
 
         // Main content
@@ -45,7 +70,10 @@ public class PatientDashboard extends JFrame {
         content.setBackground(new Color(245, 247, 250));
         content.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        JLabel welcome = new JLabel("Welcome, Patient!");
+        String patientName = patient == null
+                ? "Patient"
+                : (patient.getFirstname() + " " + patient.getLastname()).trim();
+        JLabel welcome = new JLabel("Welcome, " + patientName + "!");
         welcome.setFont(new Font("Arial", Font.BOLD, 24));
 
         JLabel description = new JLabel(
@@ -101,6 +129,12 @@ public class PatientDashboard extends JFrame {
                 "See available doctors and specializations"
         );
 
+        addDashboardButton(
+        menuPanel,
+        "View My Admissions",
+        "View your hospital admission details"
+              );
+
         content.add(menuPanel, BorderLayout.CENTER);
         add(content, BorderLayout.CENTER);
 
@@ -143,39 +177,243 @@ public class PatientDashboard extends JFrame {
         panel.add(button);
     }
 
-    private void handleDashboardAction(String action) {
-        switch (action) {
-            case "View My Profile":
-                showMessage("Patient profile");
-                break;
+    
+private void handleDashboardAction(String action) {
+    switch (action) {
+        case "View My Profile":
+    showMyProfile();
+    break;
 
-            case "Book Appointment":
-                showMessage("Book appointment");
-                break;
+     case "View Doctors":
+    showDoctors();
+    break;
 
-            case "View My Appointments":
-                showMessage("My appointments");
-                break;
-
-            case "View Prescriptions":
-                showMessage("My prescriptions");
-                break;
-
-            case "View My Bills":
-                showMessage("My bills");
-                break;
-
-            case "View Doctors":
-                showMessage("Available doctors");
-                break;
-
-            default:
+        case "Book Appointment":
+        case "View My Appointments":
+            if (authenticatedPatient == null
+                    || authenticatedPatient.getId() <= 0) {
                 JOptionPane.showMessageDialog(
                         this,
-                        "Unknown action."
+                        "Patient login details are missing. Please log in again.",
+                        "Login Required",
+                        JOptionPane.WARNING_MESSAGE
                 );
-        }
+                return;
+            }
+
+            new AppointmentForm(authenticatedPatient).setVisible(true);
+            break;
+
+       case "View Prescriptions":
+    if (authenticatedPatient == null
+            || authenticatedPatient.getId() <= 0) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Patient login details are missing. Please log in again.",
+                "Login Required",
+                JOptionPane.WARNING_MESSAGE);
+        return;
     }
+
+    new PatientPrescriptionForm(authenticatedPatient);
+    break;
+        case "View My Bills":
+    if (authenticatedPatient == null
+            || authenticatedPatient.getId() <= 0) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Patient login details are missing. Please log in again.",
+                "Login Required",
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
+    }
+
+    showMyBills();
+    break;
+
+        
+
+        case "View My Admissions":
+    if (authenticatedPatient == null
+            || authenticatedPatient.getId() <= 0) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Patient login details are missing. Please log in again.",
+                "Login Required",
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
+    }
+
+    showMyAdmissions();
+    break;
+
+        default:
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unknown action."
+            );
+    }
+}
+
+    private void showMyAdmissions() {
+    try {
+        AdmissionService admissionService = new AdmissionService();
+
+        List<Admission> admissions =
+                admissionService.getAdmissionsByPatientId(
+                        authenticatedPatient.getId()
+                );
+
+        String[] columns = {
+                "Admission ID",
+                "Doctor",
+                "Room Number",
+                "Admission Date",
+                "Status"
+        };
+
+        DefaultTableModel tableModel =
+                new DefaultTableModel(columns, 0) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        return false;
+                    }
+                };
+
+        for (Admission admission : admissions) {
+            String doctorName =
+                    admission.getDoctor().getFirstname() + " "
+                    + admission.getDoctor().getLastname();
+
+            tableModel.addRow(new Object[]{
+                    admission.getAdmissionId(),
+                    doctorName,
+                    admission.getRoomNumber(),
+                    admission.getAdmissionDate(),
+                    admission.getStatus()
+            });
+        }
+
+        JTable table = new JTable(tableModel);
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(750, 300));
+
+        if (admissions.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No admissions found for your account.",
+                    "My Admissions",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        JOptionPane.showMessageDialog(
+                this,
+                scrollPane,
+                "My Admissions",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Could not load your admissions: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
+     
+
+
+    
+private void showMyBills() {
+    try {
+        BillingService billingService = new BillingService();
+
+        List<Bill> bills = billingService.getBillsByPatientId(
+                authenticatedPatient.getId()
+        );
+
+        String[] columns = {
+                "Bill ID",
+                "Appointment ID",
+                "Consultation Fee",
+                "Medicine Charges",
+                "Room Charges",
+                "Other Charges",
+                "Total Amount",
+                "Bill Date",
+                "Payment Status",
+                "Payment Method"
+        };
+
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        for (Bill bill : bills) {
+            model.addRow(new Object[]{
+                    bill.getBillId(),
+                    bill.getAppointment() == null
+                            ? "N/A"
+                            : bill.getAppointment().getAppointmentId(),
+                    bill.getConsultationFee(),
+                    bill.getMedicineCharges(),
+                    bill.getRoomCharges(),
+                    bill.getOtherCharges(),
+                    bill.getTotalAmount(),
+                    bill.getBillDate(),
+                    bill.getPaymentStatus(),
+                    bill.getPaymentMethod() == null
+                            ? "N/A"
+                            : bill.getPaymentMethod()
+            });
+        }
+
+        if (bills.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No bills found for your account.",
+                    "My Bills",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        JTable table = new JTable(model);
+        table.setAutoCreateRowSorter(true);
+        table.setRowHeight(25);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(1000, 300));
+
+        JOptionPane.showMessageDialog(
+                this,
+                scrollPane,
+                "My Bills",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Could not load bills: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
+
 
     private void showMessage(String feature) {
         JOptionPane.showMessageDialog(
@@ -185,6 +423,113 @@ public class PatientDashboard extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
+    private void showMyProfile() {
+    if (authenticatedPatient == null
+            || authenticatedPatient.getId() <= 0) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Patient login details are missing. Please log in again.",
+                "Login Required",
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
+    }
+
+    Patient p = authenticatedPatient;
+
+    String details =
+            "Patient ID: " + p.getId()
+            + "\nOP Number: " + p.getOpNumber()
+            + "\nName: " + p.getFirstname() + " " + p.getLastname()
+            + "\nAge: " + p.getAge()
+            + "\nPhone: " + p.getPhonenumber()
+            + "\nEmail: " + p.getEmail()
+            + "\nDisease: " + p.getDisease()
+            + "\nBlood Group: " + p.getBloodGroup()
+            + "\nAddress: " + p.getAddress();
+
+    JTextArea textArea = new JTextArea(details, 12, 35);
+    textArea.setEditable(false);
+    textArea.setFont(new Font("Arial", Font.PLAIN, 14));
+    textArea.setCaretPosition(0);
+
+    JOptionPane.showMessageDialog(
+            this,
+            new JScrollPane(textArea),
+            "My Profile",
+            JOptionPane.INFORMATION_MESSAGE
+    );
+}
+
+    
+private void showDoctors() {
+    try {
+        DoctorService doctorService = new DoctorService();
+        List<Doctor> doctors = doctorService.getAllDoctors();
+
+        String[] columns = {
+                "Doctor ID",
+                "Name",
+                "Specialization",
+                "Qualification",
+                "Phone",
+                "Email",
+                "Consultation Fee"
+        };
+
+        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        for (Doctor doctor : doctors) {
+            tableModel.addRow(new Object[]{
+                    doctor.getId(),
+                    doctor.getFirstname() + " " + doctor.getLastname(),
+                    doctor.getSpecialization(),
+                    doctor.getQualification(),
+                    doctor.getPhonenumber(),
+                    doctor.getEmail(),
+                    doctor.getConsultationFee()
+            });
+        }
+
+        if (doctors.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No doctors have been registered yet.",
+                    "Available Doctors",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        JTable table = new JTable(tableModel);
+        table.setAutoCreateRowSorter(true);
+        table.setRowHeight(25);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(900, 300));
+
+        JOptionPane.showMessageDialog(
+                this,
+                scrollPane,
+                "Available Doctors",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(
+                this,
+                "Could not load doctors: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
+
 
     private void logout() {
         int choice = JOptionPane.showConfirmDialog(
@@ -200,4 +545,3 @@ public class PatientDashboard extends JFrame {
         }
     }
 }
-

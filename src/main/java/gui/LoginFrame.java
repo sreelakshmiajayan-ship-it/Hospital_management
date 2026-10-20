@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.security.GeneralSecurityException;
 
 import model.Patient;
+import model.Doctor;
 import service.PatientService;
 import service.AuthService;
 
@@ -22,8 +23,7 @@ public class LoginFrame extends JFrame {
     private JTextField patientEmailField;
 
     // Doctor login fields
-    private JTextField doctorIdField;
-    private JTextField doctorNameField;
+    private JTextField doctorEmailField;
 
     // Admin login field
     private JTextField adminIdField;
@@ -146,15 +146,11 @@ public class LoginFrame extends JFrame {
 
         } else if ("Doctor".equals(role)) {
 
-            doctorIdField = new JTextField();
-            doctorNameField = new JTextField();
+            doctorEmailField = new JTextField();
             passwordField = new JPasswordField();
 
-            loginFields.add(new JLabel("Doctor ID"));
-            loginFields.add(doctorIdField);
-
-            loginFields.add(new JLabel("Doctor Name"));
-            loginFields.add(doctorNameField);
+            loginFields.add(new JLabel("Doctor Email"));
+            loginFields.add(doctorEmailField);
 
             loginFields.add(new JLabel("Password"));
             loginFields.add(passwordField);
@@ -411,13 +407,20 @@ private void login() {
                     authService.authenticatePatient(email, password);
 
             if (authenticated) {
-                JOptionPane.showMessageDialog(
-            this,
-            "Login successful!"
-                );
+                Patient patient = patientService.findPatientByEmail(email);
+                if (patient == null) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "This account has no matching patient profile.",
+                            "Login Failed",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    return;
+                }
 
-            new PatientDashboard().setVisible(true);
-            dispose();
+                JOptionPane.showMessageDialog(this, "Login successful!");
+                new PatientDashboard(patient).setVisible(true);
+                dispose();
 
             } else {
                 JOptionPane.showMessageDialog(
@@ -443,20 +446,42 @@ private void login() {
     // DOCTOR LOGIN
     } else if ("Doctor".equals(role)) {
 
-        if (doctorIdField.getText().trim().isEmpty()
-                || doctorNameField.getText().trim().isEmpty()
-                || password.isEmpty()) {
+        String email = doctorEmailField.getText().trim();
+
+        if (email.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Enter doctor ID, doctor name and password."
+                    "Enter your doctor email and password."
             );
             return;
         }
 
-        JOptionPane.showMessageDialog(
-                this,
-                "Doctor authentication is not connected yet."
-        );
+        try {
+            Doctor doctor =
+                    authService.authenticateDoctor(email, password);
+            if (doctor == null) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Invalid doctor email or password, or no matching "
+                                + "doctor profile was found.",
+                        "Login Failed",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this, "Login successful!");
+            new DoctorDashboard(doctor).setVisible(true);
+            dispose();
+        } catch (SQLException | GeneralSecurityException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Doctor login error: " + ex.getMessage(),
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            ex.printStackTrace();
+        }
 
     // ADMIN LOGIN
     } else if ("Admin".equals(role)) {

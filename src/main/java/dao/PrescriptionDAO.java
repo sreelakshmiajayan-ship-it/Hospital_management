@@ -90,6 +90,49 @@ public class PrescriptionDAO {
         return prescriptions;
     }
 
+    public List<Prescription> getPrescriptionsByDoctorId(int doctorId)
+            throws SQLException {
+
+        List<Prescription> prescriptions = new ArrayList<>();
+        String sql = "SELECT * FROM prescriptions WHERE doctor_id = ?";
+
+        try (Connection con = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, doctorId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    prescriptions.add(mapPrescription(rs));
+                }
+            }
+        }
+
+        return prescriptions;
+    }
+
+    public List<Prescription> getPrescriptionsByPatientId(int patientId)
+        throws SQLException {
+
+    List<Prescription> prescriptions = new ArrayList<>();
+
+    String sql = "SELECT * FROM prescriptions WHERE patient_id = ?";
+
+    try (Connection con = DBConnection.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setInt(1, patientId);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                prescriptions.add(mapPrescription(rs));
+            }
+        }
+    }
+
+    return prescriptions;
+}
+
     public boolean updatePrescription(Prescription prescription)
             throws SQLException {
 

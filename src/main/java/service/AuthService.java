@@ -2,6 +2,8 @@
 package service;
 
 import dao.UserDAO;
+import dao.DoctorDAO;
+import model.Doctor;
 import model.User;
 import util.PasswordUtil;
 
@@ -11,6 +13,7 @@ import java.security.GeneralSecurityException;
 public class AuthService {
 
     private final UserDAO userDAO = new UserDAO();
+    private final DoctorDAO doctorDAO = new DoctorDAO();
 
     // Patient login using email and hashed password
     public boolean authenticatePatient(String email, String password)
@@ -58,6 +61,24 @@ public class AuthService {
 
         return PasswordUtil.verifyPassword(
                 password, admin.getPassword());
+    }
+
+    public Doctor authenticateDoctor(String email, String password)
+            throws SQLException, GeneralSecurityException {
+        if (email == null || email.isBlank()
+                || password == null || password.isEmpty()) {
+            return null;
+        }
+
+        User user = userDAO.getUserByEmail(email.trim());
+        if (user == null || user.getPassword() == null
+                || !"Doctor".equalsIgnoreCase(user.getRole())
+                || !PasswordUtil.verifyPassword(
+                        password, user.getPassword())) {
+            return null;
+        }
+
+        return doctorDAO.getDoctorByEmail(email.trim());
     }
 
     // General login for users identified by email

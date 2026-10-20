@@ -64,5 +64,24 @@ public class BillingService {
      */
     public List<Bill> getAllBills() throws SQLException {
         return billDAO.getAllBills();
+ 
     }
+
+
+    
+    /**
+     * Retrieves bills belonging to a specific patient.
+     */
+    public List<Bill> getBillsByPatientId(int patientId)
+            throws SQLException {
+
+        if (patientId <= 0) {
+            throw new IllegalArgumentException(
+                    "Invalid patient ID."
+            );
+        }
+
+        return billDAO.getBillsByPatientId(patientId);
+    }
+
 }

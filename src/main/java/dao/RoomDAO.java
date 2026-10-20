@@ -151,4 +151,24 @@ public class RoomDAO {
                 rs.getBoolean("available")
         );
     }
+
+
+    // Get Room by Room Number
+public Room getRoomByNumber(String roomNumber) throws SQLException {
+    String sql = "SELECT * FROM rooms WHERE room_number = ?";
+
+    try (Connection con = DBConnection.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setString(1, roomNumber);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return mapRoom(rs);
+            }
+        }
+    }
+
+    return null;
+}
 }

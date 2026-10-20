@@ -69,6 +69,40 @@ public class PatientDAO {
         return null;
     }
 
+    public Patient getPatientByEmail(String email) throws SQLException {
+        String sql = "SELECT * FROM patients WHERE email = ?";
+
+        try (Connection con = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Patient patient = new Patient(
+                            rs.getInt("id"),
+                            rs.getString("firstname"),
+                            rs.getString("lastname"),
+                            rs.getInt("age"),
+                            rs.getString("phonenumber"),
+                            rs.getString("email"),
+                            rs.getString("op_number"),
+                            rs.getString("disease"),
+                            rs.getString("blood_group"),
+                            rs.getString("address")
+                    );
+                    if (rs.next()) {
+                        throw new SQLException(
+                                "More than one patient record uses this email.");
+                    }
+                    return patient;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public List<Patient> getAllPatients() throws SQLException {
         List<Patient> patients = new ArrayList<>();
         String sql = "SELECT * FROM patients";

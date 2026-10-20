@@ -13,6 +13,7 @@ import service.AdmissionService;
 import service.AdminService;
 import service.AppointmentService;
 import service.BillingService;
+import service.DoctorService;
 import service.PatientService;
 import util.InputValidator;
 
@@ -20,6 +21,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public class AdminDashboard extends JFrame {
     private static final Color ACCENT = new Color(20, 110, 130);
 
     private final AdminService adminService = new AdminService();
+    private final DoctorService doctorService = new DoctorService();
     private final PatientService patientService = new PatientService();
     private final AppointmentService appointmentService =
             new AppointmentService();
@@ -130,6 +133,9 @@ public class AdminDashboard extends JFrame {
                 "Manage Admissions", "Review or discharge admissions",
                 this::showAdmissions));
         navigation.add(createNavigationButton(
+                  "Admit Patient", "Admit a patient and allocate a room",
+                this::openAdmissionForm));
+        navigation.add(createNavigationButton(
                 "Manage Bills", "Review bills and record payments",
                 this::showBills));
         navigation.add(createNavigationButton(
@@ -169,7 +175,7 @@ public class AdminDashboard extends JFrame {
     private void showDoctors() {
         try {
             List<Object[]> rows = new ArrayList<>();
-            for (Doctor doctor : adminService.getAllDoctors()) {
+            for (Doctor doctor : doctorService.getAllDoctors()) {
                 rows.add(new Object[]{
                         doctor.getId(),
                         fullName(doctor.getFirstname(), doctor.getLastname()),
@@ -223,6 +229,7 @@ public class AdminDashboard extends JFrame {
         JTextField specializationField = new JTextField(18);
         JTextField qualificationField = new JTextField(18);
         JTextField feeField = new JTextField(18);
+        JPasswordField passwordField = new JPasswordField(18);
 
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 8));
         form.add(new JLabel("First name:"));
@@ -241,6 +248,8 @@ public class AdminDashboard extends JFrame {
         form.add(qualificationField);
         form.add(new JLabel("Consultation fee:"));
         form.add(feeField);
+        form.add(new JLabel("Login password (minimum 8 characters):"));
+        form.add(passwordField);
 
         int choice = JOptionPane.showConfirmDialog(
                 this, form, "Register Doctor",
@@ -257,6 +266,7 @@ public class AdminDashboard extends JFrame {
         String specialization = specializationField.getText().trim();
         String qualification = qualificationField.getText().trim();
         String feeText = feeField.getText().trim();
+        String password = new String(passwordField.getPassword());
 
         if (!isValidName(firstName) || !isValidName(lastName)) {
             showValidationError(
@@ -287,6 +297,11 @@ public class AdminDashboard extends JFrame {
                     "Enter a valid, non-negative consultation fee.");
             return;
         }
+        if (password.length() < 8) {
+            showValidationError(
+                    "Password must contain at least 8 characters.");
+            return;
+        }
 
         Doctor doctor = new Doctor();
         doctor.setFirstname(firstName);
@@ -299,17 +314,34 @@ public class AdminDashboard extends JFrame {
         doctor.setConsultationFee(Double.parseDouble(feeText));
 
         try {
-            if (adminService.addDoctor(doctor)) {
+            boolean registered = doctorService.registerDoctor(doctor, password);
+
+            if (registered) {
                 JOptionPane.showMessageDialog(
-                        this, "Doctor registered successfully.",
-                        "Registration Complete", JOptionPane.INFORMATION_MESSAGE);
+                        this,
+                        "Doctor registered successfully. The doctor can "
+                                + "now log in using the registered email "
+                                + "and password.",
+                        "Registration Complete",
+                        JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(
-                        this, "The doctor could not be registered.",
-                        "Registration Failed", JOptionPane.WARNING_MESSAGE);
+                        this,
+                        "The doctor could not be registered.",
+                        "Registration Failed",
+                        JOptionPane.WARNING_MESSAGE);
             }
         } catch (SQLException ex) {
             showDatabaseError("Could not register the doctor.", ex);
+        } catch (GeneralSecurityException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Could not secure the doctor's password: "
+                            + ex.getMessage(),
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException ex) {
+            showValidationError(ex.getMessage());
         }
     }
 
@@ -645,6 +677,9 @@ public class AdminDashboard extends JFrame {
         new BillingForm().setVisible(true);
     }
 
+    private void openAdmissionForm() {
+    new AdmissionForm(this).setVisible(true);
+    }
     private void logout() {
         int choice = JOptionPane.showConfirmDialog(
                 this, "Are you sure you want to log out?",
